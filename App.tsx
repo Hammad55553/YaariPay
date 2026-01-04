@@ -1,45 +1,33 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React from 'react';
+import AppNavigator from './src/navigation/AppNavigator';
+import { Provider as ReduxProvider } from 'react-redux';
+import store from './src/redux/store';
+import { StatusBar } from 'react-native';
+import { Provider as PaperProvider, MD3LightTheme } from 'react-native-paper';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
-
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
-  );
-}
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+const theme = {
+  ...MD3LightTheme,
+  colors: {
+    ...MD3LightTheme.colors,
+    primary: '#016B61', // deep teal
+    secondary: '#70B2B2',
+    tertiary: '#9ECFD4',
+    background: '#E5E9C5',
+    surface: '#FFFFFF',
+    surfaceVariant: '#9ECFD4',
+    outline: '#9ECFD4',
   },
-});
+};
+
+const App = () => {
+  return (
+    <ReduxProvider store={store}>
+      <StatusBar barStyle="light-content" backgroundColor="#016B61" />
+      <PaperProvider theme={theme}>
+        <AppNavigator />
+      </PaperProvider>
+    </ReduxProvider>
+  );
+};
 
 export default App;
