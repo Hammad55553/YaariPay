@@ -8,7 +8,9 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import FriendDetailScreen from '../screens/FriendDetailScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import ChatScreen from '../screens/ChatScreen';
 import { useSelector, useDispatch } from 'react-redux';
 import auth from '@react-native-firebase/auth';
 import { setUser } from '../redux/userSlice';
@@ -142,7 +144,8 @@ const AppNavigator = () => {
         friendsList.push({ id: friendId, ...data });
       });
 
-      friendsList.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+      // Shuffle friends list randomly
+      friendsList.sort(() => 0.5 - Math.random());
       dispatch(setFriends(friendsList));
     }, (error: any) => {
       if (error.code === 'firestore/permission-denied') {
@@ -174,11 +177,13 @@ const AppNavigator = () => {
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="FriendDetail" component={FriendDetailScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="Chat" component={ChatScreen} />
           </>
         ) : (
           // Auth Stack
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />
           </>
         )}

@@ -8,6 +8,7 @@ export interface Expense {
     splitAmong: string[]; // ['Abdullah', 'Sufyan', 'Abubakr', ...]
     settledBy?: string[]; // Names of people who have paid back their share
     pendingSettlements?: string[]; // Names of people who requested settlement (waiting for approval)
+    payments?: { from: string, to: string, amount: number, timestamp: number }[];
     timestamp: number;
 }
 

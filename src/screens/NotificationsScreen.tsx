@@ -3,7 +3,7 @@ import { View, StyleSheet, FlatList } from 'react-native';
 import { Text, Card, Button, ActivityIndicator } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
-import { getFirestore, collection, query, where, onSnapshot, doc, deleteDoc, updateDoc, getDoc } from '@react-native-firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, doc, deleteDoc, updateDoc, getDoc, arrayUnion } from '@react-native-firebase/firestore';
 import Header from '../components/Header';
 import BottomBar from '../components/BottomBar';
 import { wp, hp } from '../utils/responsive';
@@ -37,27 +37,33 @@ const NotificationsScreen = () => {
     }, [user]);
 
     const handleConfirm = async (notif: any) => {
+        if (!user?.displayName) return;
         try {
             const db = getFirestore();
 
-            // 1. Update Expense
+            // 1. Update Expense with PAYMENT RECORD
             const expenseRef = doc(db, 'expenses', notif.expenseId);
             const expenseSnap = await getDoc(expenseRef);
 
             if (expenseSnap.exists()) {
                 const data = expenseSnap.data();
-                let settledBy = data?.settledBy || [];
                 let pendingSettlements = data?.pendingSettlements || [];
 
-                // Move from pending to settled
-                if (!settledBy.includes(notif.fromUser)) {
-                    settledBy.push(notif.fromUser);
-                }
+                // Remove from pending
                 pendingSettlements = pendingSettlements.filter((n: string) => n !== notif.fromUser);
 
+                // Add Payment Record
+                // Logic mirrors FriendDetailScreen: Add a payment object
+                const paymentAmount = notif.amount || 0; // The amount they requested to be approved
+
                 await updateDoc(expenseRef, {
-                    settledBy,
-                    pendingSettlements
+                    pendingSettlements,
+                    payments: arrayUnion({
+                        from: notif.fromUser,
+                        to: user.displayName, // Current user is the one approving (Creditor)
+                        amount: paymentAmount,
+                        timestamp: Date.now()
+                    })
                 });
             }
 
