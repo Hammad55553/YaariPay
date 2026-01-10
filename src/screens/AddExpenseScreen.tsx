@@ -10,6 +10,8 @@ import Header from '../components/Header';
 import { wp, hp } from '../utils/responsive';
 import { getFirestore, collection, doc, setDoc } from '@react-native-firebase/firestore';
 import { getFriendImage } from '../utils/imageMapper';
+import { sendNotification } from '../utils/FCMService';
+import { getAuth } from '@react-native-firebase/auth';
 
 const AddExpenseScreen = () => {
     const navigation = useNavigation();
@@ -61,6 +63,17 @@ const AddExpenseScreen = () => {
             // Write to Firestore
             const db = getFirestore();
             await setDoc(doc(db, 'expenses', expenseData.id), expenseData);
+
+            // Send Notification
+            const currentUser = getAuth().currentUser;
+            if (currentUser) {
+                sendNotification(
+                    `New Expense: ${description}`,
+                    `Added by ${currentUser.displayName || 'User'} • Amount: ${currentTotalPaid}`,
+                    currentUser.uid,
+                    'expense_added'
+                );
+            }
 
             // Listener in AppNavigator will update the state automatically (Single Source of Truth)
             navigation.goBack();

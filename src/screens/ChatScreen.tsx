@@ -10,6 +10,7 @@ import { RootState } from '../redux/store';
 import Header from '../components/Header';
 import { wp, hp } from '../utils/responsive';
 import { getFriendImage } from '../utils/imageMapper';
+import { sendNotification } from '../utils/FCMService';
 
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -28,6 +29,7 @@ const ChatScreen = () => {
     const [messages, setMessages] = useState<any[]>([]);
     const [text, setText] = useState('');
     const [onlineCount, setOnlineCount] = useState(0);
+    const [sending, setSending] = useState(false);
     const flatListRef = useRef<FlatList>(null);
 
     // Fetch Online Users Count
@@ -123,8 +125,9 @@ const ChatScreen = () => {
     }, [selectedMessage]);
 
     const sendMessage = async () => {
-        if (!text.trim()) return;
+        if (!text.trim() || sending) return;
 
+        setSending(true);
         try {
             const db = getFirestore();
             await addDoc(collection(db, 'messages'), {
@@ -138,9 +141,24 @@ const ChatScreen = () => {
                 deliveredTo: [user?.uid],
             });
 
+            // Trigger Client-Side FCM V1 Notification
+            if (user?.uid) {
+                // Determine Friend ID (recipient)
+                // Since this is a Group Chat mostly, we notify 'general' topic.
+                // But typically we should notify specific users.
+                // Current FCM logic broadcasts to topic 'general'.
+                sendNotification(
+                    `New Message from ${user?.displayName || 'User'}`,
+                    text.trim(),
+                    user.uid
+                );
+            }
+
             setText('');
         } catch (error) {
             console.error("Error sending message: ", error);
+        } finally {
+            setSending(false);
         }
     };
 
@@ -159,17 +177,18 @@ const ChatScreen = () => {
 
     const renderTick = (item: any) => {
         if (item.user._id !== user?.uid) return null;
-        const readBy = item.readBy || [];
-        const deliveredTo = item.deliveredTo || [];
-        const seenByOthers = readBy.length > 1;
-        const deliveredToOthers = deliveredTo.length > 1;
 
-        if (seenByOthers) {
-            return <MaterialCommunityIcons name="check-all" size={16} color="#34B7F1" style={styles.tick} />;
-        } else if (deliveredToOthers) {
-            return <MaterialCommunityIcons name="check-all" size={16} color="rgba(255,255,255,0.6)" style={styles.tick} />;
+        const readBy = item.readBy || [];
+        const totalUsers = Object.keys(userMap).length;
+        const isReadByAll = totalUsers > 0 && readBy.length >= totalUsers;
+        const isReadBySome = readBy.length > 1;
+
+        if (isReadByAll) {
+            return <MaterialCommunityIcons name="check-all" size={16} color="#000000" style={styles.tick} />;
+        } else if (isReadBySome) {
+            return <MaterialCommunityIcons name="check-all" size={16} color="#FFFFFF" style={styles.tick} />;
         } else {
-            return <MaterialCommunityIcons name="check" size={16} color="rgba(255,255,255,0.6)" style={styles.tick} />;
+            return <MaterialCommunityIcons name="check" size={16} color="#FFFFFF" style={styles.tick} />;
         }
     };
 
@@ -223,7 +242,8 @@ const ChatScreen = () => {
     return (
         <LinearGradient colors={['#021B1A', '#014942']} style={styles.container}>
             <Header
-                title={selectedMessage ? "1 Selected" : `Yaari Chat (${onlineCount})`}
+                title={selectedMessage ? "1 Selected" : "Yaari Chat"}
+                subtitle={selectedMessage ? undefined : `${onlineCount} online`}
                 showBack={true}
                 onBack={() => {
                     if (selectedMessage) setSelectedMessage(null);
@@ -262,7 +282,7 @@ const ChatScreen = () => {
                             iconColor={text.trim() ? "#00E676" : "#555"}
                             size={28}
                             onPress={sendMessage}
-                            disabled={!text.trim()}
+                            disabled={!text.trim() || sending}
                             style={styles.sendButton}
                         />
                     </View>

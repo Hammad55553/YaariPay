@@ -84,11 +84,13 @@ const useFCM = () => {
         const unsubscribeOnMessage = getMessaging().onMessage(async remoteMessage => {
             console.log("Foreground Message:", remoteMessage);
 
-            // Backup Alert to verify reception
-            Alert.alert(
-                remoteMessage.notification?.title || 'New Notification',
-                remoteMessage.notification?.body || 'You have a new message'
-            );
+            // Filter out own messages
+            if (remoteMessage.data?.senderId === user?.uid) {
+                console.log("Ignoring own notification");
+                return;
+            }
+
+
 
             Toast.show({
                 type: 'info',

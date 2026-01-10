@@ -18,7 +18,7 @@ interface FriendCardProps {
 const FriendCard = ({ item, index }: FriendCardProps) => {
     const navigation = useNavigation<any>();
 
-    const phone = item.phone || '03001234567';
+    const phone = item.phone || '03036629101';
 
     const openWhatsApp = async () => {
         const msg = encodeURIComponent('Hi! Checking our expenses in Yaaripay App.');
@@ -41,34 +41,8 @@ const FriendCard = ({ item, index }: FriendCardProps) => {
 
     const imageSource = getFriendImage(item.image);
 
-    // Generate a fixed color based on the friend's index (Dynamic on shuffle)
-    const getNeonColor = (idx: number) => {
-        const colors = [
-            '#FF0000', // Red
-            '#00FF00', // Lime
-            '#0000FF', // Blue
-            '#FFFF00', // Yellow
-            '#00FFFF', // Cyan
-            '#FF00FF', // Magenta
-            '#FFA500', // Orange
-            '#800080', // Purple
-            '#008080', // Teal
-            '#FFC0CB', // Pink
-            '#FF1493', // Deep Pink
-            '#00FF7F', // Spring Green
-            '#FFD700', // Gold
-            '#ADFF2F', // Green Yellow
-            '#FF4500', // Orange Red
-            '#DA70D6', // Orchid
-            '#1E90FF', // Dodger Blue
-            '#FF69B4', // Hot Pink
-            '#8A2BE2', // Blue Violet
-            '#32CD32', // Lime Green
-        ];
-        return colors[idx % colors.length];
-    };
-
-    const neonColor = getNeonColor(index);
+    // Fixed Theme Color
+    const neonColor = '#00E676'; // Consistent Neon Green/Teal matches App Theme
 
     return (
         <Card style={styles.gridCard} mode="outlined">

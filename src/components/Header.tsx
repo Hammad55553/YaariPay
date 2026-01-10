@@ -60,7 +60,9 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     subtitle: {
-        color: '#E5E9C5',
+        color: '#FFFFFF',
+        fontSize: 12,
+        opacity: 0.8
     },
     notificationContainer: {
         position: 'relative',

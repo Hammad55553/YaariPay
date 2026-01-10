@@ -2,12 +2,14 @@ import React, { useRef, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import { IconButton, Text } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../redux/store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { wp, hp } from '../utils/responsive';
 
 // Animated Icon Component
-const AnimatedTab = ({ icon, label, isActive, onPress, isSpecial = false }: any) => {
+const AnimatedTab = ({ icon, label, isActive, onPress, isSpecial = false, badgeCount }: any) => {
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const opacityAnim = useRef(new Animated.Value(0.6)).current; // Default dim opacity
 
@@ -40,6 +42,15 @@ const AnimatedTab = ({ icon, label, isActive, onPress, isSpecial = false }: any)
                     style={isSpecial ? {} : { margin: 0 }}
                 />
 
+                {/* Badge Logic */}
+                {badgeCount > 0 && (
+                    <View style={styles.badgeContainer}>
+                        <Text style={styles.badgeText}>
+                            {badgeCount > 99 ? '99+' : badgeCount}
+                        </Text>
+                    </View>
+                )}
+
             </Animated.View>
             {isActive && !isSpecial && (
                 <Animated.View style={[styles.activeDot, { opacity: opacityAnim }]} />
@@ -54,6 +65,8 @@ export const BottomBar = () => {
     const insets = useSafeAreaInsets();
 
     const currentRoute = route.name;
+
+    const unreadChatCount = useSelector((state: RootState) => state.notifications.unreadChatCount);
 
     return (
         <View style={styles.wrapper}>
@@ -92,6 +105,7 @@ export const BottomBar = () => {
                     icon="message-text-outline"
                     isActive={currentRoute === 'Chat'}
                     onPress={() => navigation.navigate('Chat')}
+                    badgeCount={unreadChatCount}
                 />
                 <AnimatedTab
                     icon="account"
@@ -170,6 +184,26 @@ const styles = StyleSheet.create({
         backgroundColor: '#00E676',
         position: 'absolute',
         bottom: 8
+    },
+    badgeContainer: {
+        position: 'absolute',
+        top: -5,
+        right: -5,
+        backgroundColor: '#FF3D00',
+        borderRadius: 10,
+        minWidth: 18,
+        height: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 4,
+        borderWidth: 1.5,
+        borderColor: '#0E2826' // Match background
+    },
+    badgeText: {
+        color: '#FFF',
+        fontSize: 10,
+        fontWeight: 'bold',
+        textAlign: 'center'
     }
 });
 

@@ -12,6 +12,8 @@ import { wp, hp } from '../utils/responsive';
 import Header from '../components/Header';
 import { getFriendImage } from '../utils/imageMapper';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { sendNotification } from '../utils/FCMService';
+import { getAuth } from '@react-native-firebase/auth';
 
 // Reuse color logic locally or import? Importing logic would be cleaner but for now copying the palette for consistency
 const getNeonColor = (id: string, index: number) => {
@@ -209,8 +211,20 @@ const FriendDetailScreen = () => {
                     expenseDescription: e.description,
                     amount: parseFloat(requestAmount) || 0,
                     note: requestNote,
+                    read: false,
                     timestamp: Date.now()
                 });
+
+                // Send FCM Notification
+                if (friend.id) {
+                    // Note: We need friend's UID to send notification, assuming friend.id IS the UID (which it is in our system)
+                    sendNotification(
+                        `Settlement Request from ${myName}`,
+                        `Please settle: ${e.description} (Amount: ${requestAmount})`,
+                        friend.id,
+                        'settlement_request'
+                    );
+                }
             }
             setModalVisible(false);
         } catch (err) {
@@ -569,11 +583,11 @@ const FriendDetailScreen = () => {
                                                     compact
                                                     disabled={isPending}
                                                     buttonColor={isPending ? undefined : neonColor}
-                                                    textColor={isPending ? '#AAA' : '#d4f498ff'}
+                                                    textColor={isPending ? '#AAA' : '#198b30ff'}
                                                     style={{ borderColor: neonColor, marginRight: 8 }}
                                                     onPress={() => handleOpenRequestModel(e, share)}
                                                 >
-                                                    {isPending ? "Request Sent" : "Request Status Update"}
+                                                    {isPending ? "Request Sent" : "tus Update"}
                                                 </Button>
 
                                             );
@@ -717,7 +731,7 @@ const FriendDetailScreen = () => {
                             onChangeText={setRequestAmount}
                             style={styles.modalInput}
                             textColor="#E0F2F1"
-                            theme={{ colors: { primary: neonColor, background: '#2C2C2C', placeholder: '#888' } }}
+                            theme={{ colors: { primary: neonColor, background: '#857c7cff', placeholder: '#888' } }}
                             underlineColor="transparent"
                             activeUnderlineColor="transparent"
                         />
@@ -731,7 +745,7 @@ const FriendDetailScreen = () => {
                             multiline
                             style={styles.modalInput}
                             textColor="#E0F2F1"
-                            theme={{ colors: { primary: neonColor, background: '#2C2C2C', placeholder: '#888' } }}
+                            theme={{ colors: { primary: neonColor, background: '#cbaaaaff', placeholder: '#28562fff' } }}
                             underlineColor="transparent"
                             activeUnderlineColor="transparent"
                         />

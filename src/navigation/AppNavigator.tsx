@@ -14,6 +14,7 @@ import ChatScreen from '../screens/ChatScreen';
 import { useSelector, useDispatch } from 'react-redux';
 import { getAuth } from '@react-native-firebase/auth';
 import { setUser } from '../redux/userSlice';
+import { setUnreadChatCount, setNotifications } from '../redux/notificationsSlice';
 import { setExpenses } from '../redux/expensesSlice';
 import { setFriends } from '../redux/friendsSlice';
 import { RootState } from '../redux/store';
@@ -26,7 +27,7 @@ import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firest
 // it strongly suggests migrating to: 
 // import { collection, onSnapshot, query, orderBy, doc, writeBatch } from '@react-native-firebase/firestore';
 // Let's try to switch to that.
-import { getFirestore, collection, onSnapshot, query, orderBy, doc, writeBatch, getDoc, updateDoc, setDoc, serverTimestamp } from '@react-native-firebase/firestore';
+import { getFirestore, collection, onSnapshot, query, orderBy, doc, writeBatch, getDoc, updateDoc, setDoc, serverTimestamp, limit } from '@react-native-firebase/firestore';
 import { getFriendPhone } from '../utils/phoneMapper';
 import { AppState } from 'react-native';
 import useFCM from '../hooks/useFCM';
@@ -206,6 +207,67 @@ const AppNavigator = () => {
         console.log("Permission denied for friends sync.");
       }
       console.error("Firestore friends sync error", error);
+    });
+
+    return () => unsubscribe();
+  }, [isAuthenticated]);
+
+  // Firestore Chat Listener (Unread Count)
+  useEffect(() => {
+    if (!isAuthenticated || !getAuth().currentUser?.uid) return;
+    const uid = getAuth().currentUser?.uid;
+    const db = getFirestore();
+
+    // Listen to recent messages to calculate unread count
+    // (Client-side filtering because Firestore doesn't support 'not-in-array')
+    const q = query(
+      collection(db, 'messages'),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot) return;
+
+      const unread = snapshot.docs.filter((doc: any) => {
+        const data = doc.data();
+        // Ignore own messages
+        if (data.user?._id === uid) return false;
+
+        const readBy = data.readBy || [];
+        return !readBy.includes(uid);
+      }).length;
+
+      dispatch(setUnreadChatCount(unread));
+    }, (error) => {
+      console.error("Error fetching unread chat count:", error);
+    });
+
+    return () => unsubscribe();
+  }, [isAuthenticated]);
+
+  // Firestore General Notifications Listener (Header Badge)
+  useEffect(() => {
+    const user = getAuth().currentUser;
+    if (!isAuthenticated || !user?.displayName) return;
+    const db = getFirestore();
+
+    const q = query(
+      collection(db, 'notifications'),
+      orderBy('timestamp', 'desc'),
+      limit(50)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot) return;
+
+      const notifs = snapshot.docs
+        .map((doc: any) => ({ id: doc.id, ...doc.data() }))
+        .filter((n: any) => n.toUser === user.displayName || n.toUser === user.email);
+
+      dispatch(setNotifications(notifs));
+    }, (error) => {
+      console.error("Error fetching notifications:", error);
     });
 
     return () => unsubscribe();

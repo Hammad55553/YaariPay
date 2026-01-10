@@ -5,6 +5,7 @@ import store from './src/redux/store';
 import { StatusBar } from 'react-native';
 import { Provider as PaperProvider, MD3LightTheme } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
+import { toastConfig } from './src/config/toastConfig';
 
 const theme = {
   ...MD3LightTheme,
@@ -27,8 +28,8 @@ const App = () => {
       <PaperProvider theme={theme}>
         <AppNavigator />
       </PaperProvider>
-      <Toast />
-    </ReduxProvider>
+      <Toast config={toastConfig} />
+    </ReduxProvider >
   );
 };
 
