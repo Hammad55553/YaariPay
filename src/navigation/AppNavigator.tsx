@@ -12,7 +12,7 @@ import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ChatScreen from '../screens/ChatScreen';
 import { useSelector, useDispatch } from 'react-redux';
-import auth from '@react-native-firebase/auth';
+import { getAuth } from '@react-native-firebase/auth';
 import { setUser } from '../redux/userSlice';
 import { setExpenses } from '../redux/expensesSlice';
 import { setFriends } from '../redux/friendsSlice';
@@ -26,8 +26,10 @@ import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firest
 // it strongly suggests migrating to: 
 // import { collection, onSnapshot, query, orderBy, doc, writeBatch } from '@react-native-firebase/firestore';
 // Let's try to switch to that.
-import { getFirestore, collection, onSnapshot, query, orderBy, doc, writeBatch, getDoc, updateDoc } from '@react-native-firebase/firestore';
+import { getFirestore, collection, onSnapshot, query, orderBy, doc, writeBatch, getDoc, updateDoc, setDoc, serverTimestamp } from '@react-native-firebase/firestore';
 import { getFriendPhone } from '../utils/phoneMapper';
+import { AppState } from 'react-native';
+import useFCM from '../hooks/useFCM';
 
 const Stack = createStackNavigator();
 
@@ -35,9 +37,61 @@ const AppNavigator = () => {
   const { isAuthenticated, loading } = useSelector((state: RootState) => state.user);
   const dispatch = useDispatch();
 
+  useFCM();
+
+  /* Inline Presence Logic */
+  const appState = React.useRef(AppState.currentState);
+  useEffect(() => {
+    if (!isAuthenticated || !getAuth().currentUser?.uid) return;
+    const uid = getAuth().currentUser?.uid;
+    const db = getFirestore();
+    const userRef = doc(db, 'users', uid!);
+
+    const setOnline = async () => {
+      try {
+        await setDoc(userRef, {
+          isOnline: true,
+          lastSeen: serverTimestamp(),
+          name: getAuth().currentUser?.displayName || 'User',
+          email: getAuth().currentUser?.email
+        }, { merge: true });
+      } catch (error) {
+        console.error("Error setting online:", error);
+      }
+    };
+
+    const setOffline = async () => {
+      try {
+        await updateDoc(userRef, {
+          isOnline: false,
+          lastSeen: serverTimestamp()
+        });
+      } catch (error) {
+        console.error("Error setting offline:", error);
+      }
+    };
+
+    setOnline();
+
+    const subscription = AppState.addEventListener('change', (nextAppState: any) => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        setOnline();
+      } else if (nextAppState.match(/inactive|background/)) {
+        setOffline();
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      setOffline();
+      subscription.remove();
+    };
+  }, [isAuthenticated]);
+  /* End Inline Presence Logic */
+
   // Firebase Auth Listener
   useEffect(() => {
-    const subscriber = auth().onAuthStateChanged(async (user) => {
+    const subscriber = getAuth().onAuthStateChanged(async (user) => {
       if (user) {
         let displayName = user.displayName;
 

@@ -10,9 +10,11 @@ interface HeaderProps {
     showBack?: boolean;
     onBack?: () => void;
     showNotification?: boolean;
+    rightIcon?: string;
+    onRightPress?: () => void;
 }
 
-const Header = ({ title, subtitle, showBack, onBack, showNotification }: HeaderProps) => {
+const Header = ({ title, subtitle, showBack, onBack, showNotification, rightIcon, onRightPress }: HeaderProps) => {
     const navigation = useNavigation<any>();
     const notifications = useSelector((state: RootState) => state.notifications.list);
 
@@ -28,6 +30,9 @@ const Header = ({ title, subtitle, showBack, onBack, showNotification }: HeaderP
                 titleStyle={styles.title}
                 subtitleStyle={styles.subtitle}
             />
+            {rightIcon && (
+                <Appbar.Action icon={rightIcon} onPress={onRightPress} color="#E0F2F1" />
+            )}
             {showNotification && (
                 <View style={styles.notificationContainer}>
                     <Appbar.Action
